@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "EVAD"
+version = "0.1.0"
+description = "Code for the paper EVAD: Encrypted Vibrational Anomaly Detection With Homomorphic Encryption"
+authors = ["AlexMV12 <email@alexmv12.xyz>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pandas = "^1.5.3"
+polars = "^0.16.16"
+pyarrow = "^11.0.0"
+plotly = "^5.13.1"
+scikit-learn = "^1.2.2"
+matplotlib = "^3.7.1"
+tables = "^3.8.0"
+h5py = "^3.8.0"
+yellowbrick = "^1.5"
+tenseal = "^0.3.14"
+tqdm = "^4.65.0"
+linetimer = "^0.1.5"
+memory-profiler = "^0.61.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
