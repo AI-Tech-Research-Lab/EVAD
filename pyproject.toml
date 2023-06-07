@@ -6,7 +6,7 @@ authors = ["AlexMV12 <email@alexmv12.xyz>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.8,<3.11"
 pandas = "^1.5.3"
 polars = "^0.16.16"
 pyarrow = "^11.0.0"
