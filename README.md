@@ -12,6 +12,7 @@ In more detail, this folder contains the following files and folders:
 5. `Plots.ipynb`: check this notebook to see that the results of the plain and encrypted processings are the same, as well as the time needed for the computations.
 6. `Memory.ipynb`: check this notebook to see the memory required by the encrypted computation.
 7. `DataExploration.ipynb`: check this notebook for an introduction to the considered dataset.
+8. `times.csv`: used for the times histogram in the paper, created by `Plots.pdf`.
 
 Moreover, to make it possible to replicate these experiments, we provide:
 1. `pyproject.toml` and `poetry.lock`: you can use [Poetry](https://python-poetry.org/docs/) to create and manage a Python virtual environment with all the needed libraries installed;
