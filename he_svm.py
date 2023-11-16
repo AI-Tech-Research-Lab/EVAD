@@ -32,6 +32,7 @@ def preprocess_a_sample_encrypted(sample, context, windows, scaler):
         k_vals, n_vals = np.mgrid[0:signal_length, 0:dim_output]
         theta_vals = 2 * np.pi * k_vals * n_vals / signal_length
         return np.hstack([np.cos(theta_vals), -np.sin(theta_vals)])
+        
 
     def create_rotation_matrix(signal_length):
         d = (signal_length/2) + 1 if signal_length % 2 == 0 else (signal_length+1) / 2
@@ -39,6 +40,7 @@ def preprocess_a_sample_encrypted(sample, context, windows, scaler):
         m = np.vstack([np.diag(np.full(d,1)), np.diag(np.full(d,1))])
 
         return m
+
 
     def create_windows_matrix(n_windows, windows_length, fft_length):
         for i in range(0, n_windows):
@@ -56,60 +58,45 @@ def preprocess_a_sample_encrypted(sample, context, windows, scaler):
                 m = np.vstack([m, sub])
         return m
 
-    def create_stack_matrices(windows_length):
+
+    def create_stack_matrices(axes, windows_length):
         zeros = np.zeros((windows_length, windows_length))
         diag = np.diag(np.full(windows_length, 1))
 
-        m_x = np.hstack([diag, zeros, zeros])
-        m_y = np.hstack([zeros, diag, zeros])
-        m_z = np.hstack([zeros, zeros, diag])
+        if axes == 2:
+            return (np.hstack([diag, zeros]), np.hstack([zeros, diag]))
+        
+        if axes == 3:
+            return (np.hstack([diag, zeros, zeros]), np.hstack([zeros, diag, zeros]), np.hstack([zeros, zeros, diag]))
 
-        return m_x, m_y, m_z
 
     df = sample
+    n_axes = len(df.columns)
 
-    X = df.iloc[:, 0] 
-    Y = df.iloc[:, 1]
-    Z = df.iloc[:, 2]
-
-    signal_length = len(X)
+    signal_length = len(df)
     fft_length = int((signal_length / 2)) + 1
     len_windows = int(fft_length / windows) - 1
 
-    # with CodeTimer('Keys and stuff generation'):
-    # Setup TenSEAL context
-    # context = ts.context(
-    #             ts.SCHEME_TYPE.CKKS,
-    #             poly_modulus_degree=poly_modulus_degree,
-    #             coeff_mod_bit_sizes=coeff_mod_bit_sizes
-    #           )
-    # context.generate_galois_keys()
-    # context.global_scale = 2**40
+    encrypted_vectors = []
+    for i in range(0, n_axes):
+        encrypted_vectors.append(ts.ckks_vector(context, df.iloc[:, i]))
 
-    # with CodeTimer('Encryption'):
-    enc_X = ts.ckks_vector(context, X)
-    enc_Y = ts.ckks_vector(context, Y)
-    enc_Z = ts.ckks_vector(context, Z)
-
-        # with CodeTimer('Processing of FFT'):
     W_fourier = create_fourier_weights(signal_length)
     W_rotation = create_rotation_matrix(signal_length)
     W_windows = create_windows_matrix(windows, len_windows, fft_length)
     
-    # W = W_fourier @ W_rotation @ W_windows
     W = W_rotation @ W_windows
     
-    m_x, m_y, m_z = create_stack_matrices(windows)
-    W_x = W @ m_x
-    W_y = W @ m_y
-    W_z = W @ m_z
-        
-    # with CodeTimer('Multiplication with W_Fourier...'):
-    enc_X = ((enc_X @ W_fourier) ** 2) @ W_x
-    enc_Y = ((enc_Y @ W_fourier) ** 2) @ W_y
-    enc_Z = ((enc_Z @ W_fourier) ** 2) @ W_z
+    tuple_of_stack_matrices = create_stack_matrices(n_axes, windows)
 
-    final_encrypted_sample = enc_X + enc_Y + enc_Z
+    stack_matrices = []
+    for i in range(0, n_axes):
+        stack_matrices.append(W @ tuple_of_stack_matrices[i])
+        
+    for i in range(0, n_axes):
+        encrypted_vectors[i] = ((encrypted_vectors[i] @ W_fourier) ** 2) @ stack_matrices[i]
+
+    final_encrypted_sample = sum(encrypted_vectors)
     
     if scaler:
         size = final_encrypted_sample.size()
@@ -122,15 +109,13 @@ def preprocess_a_sample_encrypted(sample, context, windows, scaler):
 def he_svm(encrypted_sample, svm, windows):
     """
     """
-    # final_encrypted_sample = ts.ckks_vector(context, final_encrypted_sample.decrypt())  # Rencryption
     # with CodeTimer('Computing the SVM output'):
     SV = svm.support_vectors_
     gamma = svm.gamma_value
     degree = svm.degree
 
     DC = svm.dual_coef_
-    intercept = svm.intercept_
-
+    intercept = svm.intercept_    
     enc_result = np.array([encrypted_sample.dot(SV[x] * gamma) for x in range(0, len(SV))])
     # enc_result = enc_result * gamma
     enc_result = enc_result ** degree

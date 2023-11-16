@@ -22,6 +22,9 @@ linetimer = "^0.1.5"
 memory-profiler = "^0.61.0"
 
 
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.26.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
